@@ -1,38 +1,30 @@
-const BASE_URL = "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,rain,wind_speed_80m,soil_temperature_6cm";
-import * as fs from 'fs';
+// index.js
+import { readWeatherData } from './app/controllers/weatherController.js';
+import { saveDataToFile } from './app/controllers/fileController.js';
+import { logData, logError } from './app/controllers/loggerController.js';
 
-// Fonction pour récupérer les données de l'API
-async function getLucasClassical() {
+// Chemin vers le fichier JSON contenant les données météo simulées
+const WEATHER_DATA_FILE = './data/weatherData.json';
+
+// Fonction principale pour obtenir et sauvegarder les données
+async function main() {
     try {
-        // Effectuer une requête fetch vers l'API
-        const response = await fetch(BASE_URL);
+        // Lire les données météo depuis le fichier local
+        logData("Lecture des données météo...");
+        const weatherData = readWeatherData(WEATHER_DATA_FILE);
 
-        // Vérifier si la réponse est OK
-        if (!response.ok) {
-            throw new Error(`Erreur: ${response.status} - ${response.statusText}`);
-        }
+        // Sauvegarder les données dans un fichier
+        logData("Sauvegarde des données dans un fichier...");
+        saveDataToFile(weatherData);
 
-        // Convertir la réponse en JSON
-        const data = await response.json();
-
-        // Afficher les données dans la console
-        console.log("Données reçues :", data);
-
-        // Générer un horodatage pour le nom du fichier
-        const now = new Date();
-        const timestamp = now.toISOString().replace(/[:.]/g, '-'); // Format ISO ajusté pour les noms de fichiers
-        const fileName = `sauvegarde_${timestamp}.json`; // Nom du fichier basé sur l'heure
-
-        // Écrire les données dans un fichier avec le nom horodaté
-        fs.writeFileSync(fileName, JSON.stringify(data, null, 2), 'utf-8');
-
-        console.log(`Données enregistrées dans le fichier : ${fileName}`);
+        // Log de succès
+        logData("Processus terminé avec succès.");
     } catch (error) {
-        // Gérer les erreurs
-        console.error("Erreur lors de l'appel à l'API :", error.message);
+        // Log des erreurs
+        logError("Une erreur est survenue lors du processus.");
+        logError(error.message);
     }
 }
 
-// Appeler la fonction
-getLucasClassical();
-
+// Appeler la fonction principale
+main();
