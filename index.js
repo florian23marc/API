@@ -1,37 +1,57 @@
+import express from 'express'; // Framework pour créer l'API
+import { fetchWeatherData } from './app/controllers/weatherController.js';
+import { saveDataToFile } from './app/controllers/fileController.js';
+import { logData, logError } from './app/controllers/loggerController.js';
+import { readWeatherData } from './app/controllers/weatherController.js'; // Importer la fonction de lecture des données
+/*import { nom des fonctions } from ' chemin vers le controller qui contien la/les fonctions' */
+
 const BASE_URL = "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,rain,wind_speed_80m,soil_temperature_6cm";
-import * as fs from 'fs';
+const API_PORT = 3000; // Port de l'API
 
-// Fonction pour récupérer les données de l'API
-async function getLucasClassical() {
+// Fonction principale pour obtenir et sauvegarder les données
+async function main() {
     try {
-        // Effectuer une requête fetch vers l'API
-        const response = await fetch(BASE_URL);
+        logData("Récupération des données météo...");
+        const weatherData = await fetchWeatherData(BASE_URL); /*On récupère les data météo de l'api et on stock dans une fonction -> Dans weatherController.js*/
 
-        // Vérifier si la réponse est OK
-        if (!response.ok) {
-            throw new Error(`Erreur: ${response.status} - ${response.statusText}`);
-        }
+        logData("Sauvegarde des données dans un fichier...");
+        saveDataToFile(weatherData); /*On sauvegarde les données récoltées de l'API et on les mets dans un fichier -> Dans fileController.js*/
 
-        // Convertir la réponse en JSON
-        const data = await response.json();
+        logData("Lancement de l'API...");
+        startWeatherAPI(); /*Fonction qui permet de config la route pour avoir les données du fichier json */
 
-        // Afficher les données dans la console
-        console.log("Données reçues :", data);
-
-        // Générer un horodatage pour le nom du fichier
-        const now = new Date();
-        const timestamp = now.toISOString().replace(/[:.]/g, '-'); // Format ISO ajusté pour les noms de fichiers
-        const fileName = `sauvegarde_${timestamp}.json`; // Nom du fichier basé sur l'heure
-
-        // Écrire les données dans un fichier avec le nom horodaté
-        fs.writeFileSync(fileName, JSON.stringify(data, null, 2), 'utf-8');
-
-        console.log(`Données enregistrées dans le fichier : ${fileName}`);
+        logData("Processus terminé avec succès.");
     } catch (error) {
-        // Gérer les erreurs
-        console.error("Erreur lors de l'appel à l'API :", error.message);
+        logError("Une erreur est survenue lors du processus.");
+        logError(error.message);
     }
 }
 
-// Appeler la fonction
-getLucasClassical();
+// Fonction pour démarrer l'API, ce que l'on va affiché dans le navigateur
+function startWeatherAPI() {
+    const app = express();
+
+    // Route pour obtenir les données du fichier JSON, on configure la route pour récupéré les data depuis le lien qui fait office d'API
+    app.get('/api/weather/:path', (req, res) => {
+        const filePath = `./data/${req.params.path}`;
+        logData(`Chemin demandé : ${filePath}`);
+
+        try {
+            const data = readWeatherData(filePath); // Lire les données JSON, Fonction pour lire les données depuis un fichier JSON local -> weatherController.js
+            logData(`Données récupérées : ${JSON.stringify(data)}`);
+            res.json(data); // Renvoyer les données au client
+        } catch (error) {
+            logError(`Erreur lors de la récupération des données pour le fichier : ${filePath}`);
+            logError(error.message);
+            res.status(500).json({ error: "Erreur lors de la récupération des données." });
+        }
+    });
+
+    // Lancer le serveur
+    app.listen(API_PORT, () => {
+        logData(`API démarrée sur http://localhost:${API_PORT}`);
+    });
+}
+
+// Appeler la fonction principale
+main();
