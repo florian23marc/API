@@ -1,14 +1,13 @@
-// controller/fileController.js
 import * as fs from 'fs';
 import * as path from 'path';
 
 // Fonction pour sauvegarder les données dans un fichier
 export function saveDataToFile(data, folderPath = 'data') {
     try {
-        // Générer un horodatage pour le nom du fichier
+        // Générer un horodatage pour le nom du fichier, le nom est généré en fonction de la date et heure, a chaque lancement du prog
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-'); // Format ISO ajusté pour les noms de fichiers
-        const fileName = `sauvegarde_${timestamp}.json`; // Nom du fichier basé sur l'heure
+        const fileName = `sauvegarde_${timestamp}.json`; // Nom du fichier basé sur l'heure, assure un nom différent et donc empèche l'écrasement des data dans le meme fichier
 
         // Définir le chemin du dossier et créer le dossier "data" s'il n'existe pas
         const folderFullPath = path.resolve(folderPath);
